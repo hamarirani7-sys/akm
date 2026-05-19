@@ -396,12 +396,16 @@
         </div>
         <div class="bottom-section">
             <div>
-                <label>File Prefix</label>
-                <input type="text" id="file-prefix" placeholder="e.g. match-">
-                <label>Starting Number</label>
-                <input type="number" id="start-num" value="1">
+                <label>File Prefix 1</label>
+                <input type="text" id="file-prefix-1" placeholder="e.g. match-">
+                <label>File Prefix 2</label>
+                <input type="text" id="file-prefix-2" placeholder="e.g. post-">
+                <label>File Prefix 3</label>
+                <input type="text" id="file-prefix-3" placeholder="e.g. page-">
             </div>
             <div>
+                <label>Starting Number</label>
+                <input type="number" id="start-num" value="1">
                 <label>Base URL (for url-list.txt)</label>
                 <input type="text" id="base-url" placeholder="https://example.com/pages/">
             </div>
@@ -507,7 +511,10 @@
         const keywords = document.getElementById('keywords-input').value.split('\n').filter(l => l.trim() !== '');
         const titles = document.getElementById('titles-input').value.split('\n').filter(l => l.trim() !== '');
         const images = document.getElementById('images-input').value.split('\n').filter(l => l.trim() !== '');
-        const prefix = document.getElementById('file-prefix').value.trim();
+        const prefix1 = document.getElementById('file-prefix-1').value.trim();
+        const prefix2 = document.getElementById('file-prefix-2').value.trim();
+        const prefix3 = document.getElementById('file-prefix-3').value.trim();
+        const prefixes = [prefix1, prefix2, prefix3];
         const startNum = parseInt(document.getElementById('start-num').value) || 1;
         const baseUrl = document.getElementById('base-url').value.trim();
 
@@ -535,10 +542,17 @@
 
                 const num = (startNum + i).toString().padStart(3, '0');
                 const slug = template.name.replace(/\s+/g, '-').toLowerCase();
-                const fileName = `${prefix}${num}-${slug}.html`;
+                
+                // প্রতিটি keyword এর জন্য prefix rotate করছি
+                const currentPrefix = prefixes[i % prefixes.length];
+                const fileName = `${currentPrefix}${num}-${slug}.html`;
 
                 zip.file(fileName, html);
-                if (baseUrl) urlList += (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + fileName + '\n';
+                
+                if (baseUrl) {
+                    urlList += (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + fileName + '\n';
+                }
+                
                 if (i < 12) {
                     const item = document.createElement('div');
                     item.textContent = fileName;

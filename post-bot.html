@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Generators (Multi-Template)</title>
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #7367f0;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e0e0e0;
+            --text-dim: #a0a0c0;
+            --glow: 0 0 15px rgba(0, 242, 254, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 15px 40px;
+            border-radius: 100px;
+            font-size: 0.95rem;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .stat-item span {
+            color: var(--accent-primary);
+            font-weight: 700;
+            text-shadow: var(--glow);
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s ease;
+        }
+
+        .panel-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .step-num {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            box-shadow: var(--glow);
+        }
+
+        /* Templates Section */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .template-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .template-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: var(--accent-primary);
+            transform: translateY(-5px);
+        }
+
+        .template-card .badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--accent-secondary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .template-preview {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            height: 80px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 12px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .btn-add-template {
+            border: 2px dashed var(--glass-border);
+            background: transparent;
+            color: var(--text-dim);
+            border-radius: 16px;
+            padding: 30px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-add-template:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: rgba(0, 242, 254, 0.05);
+        }
+
+        /* Forms */
+        textarea, input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dim);
+        }
+
+        /* Buttons */
+        .btn-generate {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 20px;
+            box-shadow: var(--glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.6);
+        }
+
+        .btn-generate:disabled {
+            filter: grayscale(1);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-delete {
+            background: rgba(255, 77, 77, 0.1);
+            color: #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: #ff4d4d;
+            color: white;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: #1a1a3a;
+            border: 1px solid var(--accent-primary);
+            width: 90%;
+            max-width: 800px;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 0 50px rgba(0, 242, 254, 0.2);
+        }
+
+        .chip {
+            background: rgba(115, 103, 240, 0.15);
+            border: 1px solid var(--accent-secondary);
+            color: var(--accent-secondary);
+            padding: 6px 15px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chip:hover {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        /* Grid Layouts */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        /* Preview */
+        .preview-box {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            display: none;
+        }
+
+        .preview-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid, .bottom-section { grid-template-columns: 1fr; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-secondary); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>HTML Generators (Multi-Template)</h1>
+        <div class="stats-bar">
+            <div class="stat-item">Templates: <span id="stat-templates">0</span></div>
+            <div class="stat-item">Keywords: <span id="stat-keywords">0</span></div>
+            <div class="stat-item">Total Files: <span id="stat-total">0</span></div>
+            <div class="stat-item">Output: <span>ZIP + TXT</span></div>
+        </div>
+    </header>
+
+    <!-- Step 01: Templates -->
+    <div class="panel" style="margin-bottom: 30px;">
+        <div class="panel-title">
+            <div class="step-num">01</div>
+            Manage Templates
+        </div>
+        <div class="templates-grid" id="templates-container">
+            <button class="btn-add-template" onclick="openModal()">
+                <span style="font-size: 2.5rem;">+</span>
+                <span style="font-weight: 700;">New Template</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <!-- Step 02: Keywords -->
+        <div class="panel">
+            <div class="panel-title">
+                <div class="step-num">02</div>
+                Keywords List
+            </div>
+            <textarea id="keywords-input" rows="12" placeholder="One keyword per line..."></textarea>
+        </div>
+
+        <!-- Optional Panels -->
+        <div class="panel">
+            <div class="panel-title">
+                <div class="step-num">03</div>
+                Content Variables
+            </div>
+            <label>Titles ({{Title}})</label>
+            <textarea id="titles-input" rows="5" placeholder="One title per line..."></textarea>
+            <label>Image URLs ({{IMAGE_URL}})</label>
+            <textarea id="images-input" rows="4" placeholder="One URL per line..."></textarea>
+        </div>
+    </div>
+
+    <!-- Step 03: File Naming and Generate -->
+    <div class="panel" style="margin-top: 30px;">
+        <div class="panel-title">
+            <div class="step-num">04</div>
+            Final Configuration
+        </div>
+        <div class="bottom-section">
+            <div>
+                <label>File Prefix</label>
+                <input type="text" id="file-prefix" placeholder="e.g. match-">
+                <label>Starting Number</label>
+                <input type="number" id="start-num" value="1">
+            </div>
+            <div>
+                <label>Base URL (for url-list.txt)</label>
+                <input type="text" id="base-url" placeholder="https://example.com/pages/">
+            </div>
+        </div>
+        
+        <button id="btn-generate" class="btn-generate" onclick="generateFiles()" disabled>
+            Generate & Download All
+        </button>
+        
+        <div id="loading-indicator" style="display:none; text-align:center; margin-top:20px; color:var(--accent-primary);">
+            ✨ Magic in progress... Generating your files...
+        </div>
+
+        <div id="preview-section" class="preview-box">
+            <h4 style="margin-bottom: 15px; color: white;">Generated Preview:</h4>
+            <div id="preview-list" class="preview-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+        <div class="panel-title">Add New Template</div>
+        <label>Template Name</label>
+        <input type="text" id="template-name" placeholder="e.g. Hero Template">
+        <label>Placeholders (Click to insert)</label>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <div class="chip" onclick="insertPlaceholder('{{Keyword}}')">{{Keyword}}</div>
+            <div class="chip" onclick="insertPlaceholder('{{Title}}')">{{Title}}</div>
+            <div class="chip" onclick="insertPlaceholder('{{IMAGE_URL}}')">{{IMAGE_URL}}</div>
+        </div>
+        <label>HTML Code</label>
+        <textarea id="template-content" rows="10" style="font-family:monospace;"></textarea>
+        <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:20px;">
+            <button class="btn-delete" style="background:transparent; color:white; border-color:#555;" onclick="closeModal()">Cancel</button>
+            <button class="btn-generate" style="width:auto; margin-top:0; padding:10px 30px;" onclick="saveTemplate()">Save Template</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let templates = [];
+
+    function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+    function insertPlaceholder(p) {
+        const el = document.getElementById('template-content');
+        const start = el.selectionStart;
+        el.value = el.value.substring(0, start) + p + el.value.substring(el.selectionEnd);
+        el.focus();
+    }
+
+    function saveTemplate() {
+        const name = document.getElementById('template-name').value.trim();
+        const content = document.getElementById('template-content').value.trim();
+        if (name && content) {
+            templates.push({ name, content });
+            renderTemplates();
+            updateStats();
+            closeModal();
+            document.getElementById('template-name').value = '';
+            document.getElementById('template-content').value = '';
+        }
+    }
+
+    function deleteTemplate(i) {
+        templates.splice(i, 1);
+        renderTemplates();
+        updateStats();
+    }
+
+    function renderTemplates() {
+        const container = document.getElementById('templates-container');
+        const addBtn = container.querySelector('.btn-add-template');
+        container.innerHTML = '';
+        templates.forEach((t, i) => {
+            const card = document.createElement('div');
+            card.className = 'template-card';
+            card.innerHTML = `
+                <div class="badge">#${i + 1}</div>
+                <h4 style="font-weight:700;">${t.name}</h4>
+                <div class="template-preview">${t.content.substring(0, 100).replace(/</g, '&lt;')}...</div>
+                <button class="btn-delete" onclick="deleteTemplate(${i})">Remove</button>
+            `;
+            container.appendChild(card);
+        });
+        container.appendChild(addBtn);
+    }
+
+    function updateStats() {
+        const keywords = document.getElementById('keywords-input').value.split('\n').filter(l => l.trim() !== '');
+        document.getElementById('stat-templates').textContent = templates.length;
+        document.getElementById('stat-keywords').textContent = keywords.length;
+        document.getElementById('stat-total').textContent = keywords.length;
+        document.getElementById('btn-generate').disabled = (templates.length === 0 || keywords.length === 0);
+    }
+
+    document.getElementById('keywords-input').addEventListener('input', updateStats);
+
+    async function generateFiles() {
+        const keywords = document.getElementById('keywords-input').value.split('\n').filter(l => l.trim() !== '');
+        const titles = document.getElementById('titles-input').value.split('\n').filter(l => l.trim() !== '');
+        const images = document.getElementById('images-input').value.split('\n').filter(l => l.trim() !== '');
+        const prefix = document.getElementById('file-prefix').value.trim();
+        const startNum = parseInt(document.getElementById('start-num').value) || 1;
+        const baseUrl = document.getElementById('base-url').value.trim();
+
+        const loading = document.getElementById('loading-indicator');
+        const btn = document.getElementById('btn-generate');
+        loading.style.display = 'block';
+        btn.disabled = true;
+
+        try {
+            const zip = new JSZip();
+            let urlList = '';
+            const previewList = document.getElementById('preview-list');
+            previewList.innerHTML = '';
+
+            for (let i = 0; i < keywords.length; i++) {
+                const keyword = keywords[i].trim();
+                const title = titles.length > 0 ? (titles[i] || titles[titles.length - 1]).trim() : '';
+                const image = images.length > 0 ? (images[i] || images[images.length - 1]).trim() : '';
+                const template = templates[i % templates.length];
+
+                let html = template.content
+                    .replace(/\{\{Keyword\}\}/gi, keyword)
+                    .replace(/\{\{Title\}\}/gi, title)
+                    .replace(/\{\{IMAGE_URL\}\}/gi, image);
+
+                const num = (startNum + i).toString().padStart(3, '0');
+                const slug = template.name.replace(/\s+/g, '-').toLowerCase();
+                const fileName = `${prefix}${num}-${slug}.html`;
+
+                zip.file(fileName, html);
+                if (baseUrl) urlList += (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + fileName + '\n';
+                if (i < 12) {
+                    const item = document.createElement('div');
+                    item.textContent = fileName;
+                    previewList.appendChild(item);
+                }
+            }
+
+            if (baseUrl) zip.file('url-list.txt', urlList);
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, 'generated-html.zip');
+
+            if (baseUrl) {
+                setTimeout(() => {
+                    const blob = new Blob([urlList], { type: 'text/plain' });
+                    saveAs(blob, 'url-list.txt');
+                }, 500);
+            }
+            document.getElementById('preview-section').style.display = 'block';
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            loading.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
